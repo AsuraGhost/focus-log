@@ -1,4 +1,4 @@
-# Focus Log — v1
+# Focus Log — v1.1
 
 A tiny task API (Python standard library only). The capstone product for
 lesson 94 of the Become a Coder & Programmer curriculum.
@@ -19,7 +19,7 @@ created with POST shows up in `GET /tasks`.
 
 ```bash
 python3 app.py
-# Focus Log running at http://127.0.0.1:8000
+# Focus Log running at http://0.0.0.0:8000 (port comes from $PORT, default 8000)
 curl http://127.0.0.1:8000/health
 curl -X POST http://127.0.0.1:8000/tasks -H "Content-Type: application/json" \
   -d '{"title": "Ship v1"}'
@@ -53,9 +53,9 @@ podman --root "$HOME/workspace/coder-academy/tools/podman-storage" run -d \
 curl http://127.0.0.1:8000/health   # {"status": "ok", "tasks": 0}
 ```
 
-Why `--network host`: `app.py` binds `127.0.0.1`, so a port mapping to the
-container's IP would not reach it; host networking makes the container's
-loopback the host's loopback.
+Networking note: v1 bound `127.0.0.1`, which is why `--network host` was
+needed. Since v1.1 the app binds `0.0.0.0`, so a plain port mapping
+(`-p 8000:8000`) works too; host networking remains the verified setup.
 
 ## Roll back
 
@@ -65,18 +65,22 @@ podman --root "$HOME/workspace/coder-academy/tools/podman-storage" rm focus-log-
 # image localhost/focus-log:v1 is kept; re-run the `podman run` above to restore
 ```
 
-## Known v1 limits
+## Known limits
 
 - Tasks are in-memory only — a restart empties the list (cut-list item 1).
 - No auth; anyone who can reach the port can add tasks (cut-list item 2).
-- The server does not handle SIGTERM gracefully: `podman stop` waits the
-  full 10 s grace period, then SIGKILLs it. A v1.1 fix is a signal handler
-  that calls `server.shutdown()`.
+- Fixed in v1.1: SIGTERM/SIGINT now shut the server down gracefully (the
+  v1 server waited out the full 10 s grace period before SIGKILL).
 
-## Next deployment step (not done here)
+## Deployment status
 
-Push the image to a registry and run it behind HTTPS on a VPS — the
-lesson-78 pattern (PM2/nginx) or a hosted container service. Blockers:
-no registry account is configured for this project and there is no domain
-or VPS assigned to it, so the verified deployment for v1 is the local
-Podman container above.
+v1.1 is deploy-ready: it binds `0.0.0.0`, reads its port from `$PORT`,
+and stops cleanly on SIGTERM — the three things hosted platforms require.
+
+Public hosting was attempted on 2026-11-20 and parked by the owner's
+decision: Render now requires a card on file even for its free tier, and
+Hugging Face gates Docker Spaces behind its PRO subscription. Rather
+than put a card on file for a capstone demo, the owner chose to keep the
+project GitHub-only. The verified deployment remains the local Podman
+container above; the Dockerfile in this repo will run unchanged on any
+host that takes it.
